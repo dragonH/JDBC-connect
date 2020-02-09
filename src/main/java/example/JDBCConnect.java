@@ -97,17 +97,17 @@ public class JDBCConnect implements RequestHandler<RequestClass, ResponseClass>{
             ResultSet result = statement.executeQuery(String.format("Select table_name from INFORMATION_SCHEMA.TABLES where `table_schema` = '%s'", databaseName));
             int columnCount = result.getMetaData().getColumnCount();
             List<String> tables = new ArrayList<String>();
+            System.out.println("------Tables------");
             while(result.next()) {
                 tables.add(result.getString(1));
                 for (int i = 1; i <= columnCount; i += 1 ) {
-                    System.out.print(String.format("%s \t", result.getString(i)));
+                    System.out.println(String.format("%s \t", result.getString(i)));
                 }
-                System.out.println();
             }
+            System.out.println("------------------");
             conn.close();
             return tables;
         } catch (Exception error) {
-            System.out.println(error.toString());
             throw error;
         }
     }
@@ -115,33 +115,34 @@ public class JDBCConnect implements RequestHandler<RequestClass, ResponseClass>{
     public ResponseClass handleRequest(RequestClass body, Context context) {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            System.out.printf("[endPoint]: %s\n", body.endPoint);
-            System.out.printf("[databaseName]: %s\n", body.databaseName);
-            System.out.printf("[user]: %s\n", body.user);
-            System.out.printf("[password]: %s\n", body.password);
+            System.out.printf("[EndPoint]: %s\n", body.endPoint);
+            System.out.printf("[DatabaseName]: %s\n", body.databaseName);
+            System.out.printf("[User]: %s\n", body.user);
+            System.out.printf("[Password]: %s\n", body.password);
             Boolean paramsCheckResult = Stream
                 .of(new String[]{ body.endPoint, body.databaseName, body.user, body.password})
                 .filter(params -> params == null || params.equals(""))
                 .count() > 0;
             if (paramsCheckResult) {
+                System.out.printf("[ERROR]: %s\n", "Missing params");
                 return new ResponseClass(false, "Missing params");
             }
             List<String> tables = queryDB(body.endPoint, body.databaseName, body.user, body.password);
             return new ResponseClass(true, "Succeed.", tables);
         } catch(ClassNotFoundException error) {
-            System.out.print("Driver not found");
+            System.out.printf("[ERROR]: %s\n", error.toString());
             return new ResponseClass(false, "Driver not found");
         } catch (CommunicationsException error) {
-            System.out.print(error.toString());
+            System.out.printf("[ERROR]: %s\n", error.toString());
             return new ResponseClass(false, "Connection fail");
         } catch (SQLSyntaxErrorException error) {
-            System.out.print(error.toString());
+            System.out.printf("[ERROR]: %s\n", error.toString());
             return new ResponseClass(false, "Unknown database");
         } catch (SQLException error) {
-            System.out.print(error.toString());
+            System.out.printf("[ERROR]: %s\n", error.toString());
             return new ResponseClass(false, "Verify fail");
         } catch(Exception error) {
-            System.out.print(error.toString());
+            System.out.printf("[ERROR]: %s\n", error.toString());
             return new ResponseClass(false, error.toString());
         }
     }
