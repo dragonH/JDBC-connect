@@ -19,6 +19,7 @@ class RequestClass {
     String user;
     String password;
     String databaseName;
+    String databaseType;
 
     public String getendPoint() {
         return endPoint;
@@ -43,12 +44,19 @@ class RequestClass {
     }
     public void setdatabaseName(String databaseName) {
         this.databaseName = databaseName;
-    }       
-    public RequestClass(String endPoint, String user, String password, String databaseName) {
+    }
+    public String getdatabaseType() {
+        return databaseType;
+    }
+    public void setdatabaseType(String databaseType) {
+        this.databaseType = databaseType;
+    }
+    public RequestClass(String endPoint, String user, String password, String databaseName, String databaseType) {
         this.endPoint = endPoint;
         this.user = user;
         this.password = password;
         this.databaseName = databaseName;
+        this.databaseType = databaseType;
     }
     public RequestClass() {}
     
@@ -90,7 +98,7 @@ class ResponseClass {
 }
 
 public class JDBCConnect implements RequestHandler<RequestClass, ResponseClass>{
-    private List<String> queryDB(String jdbcEndPoint, String databaseName, String user, String password) throws Exception {
+    private List<String> queryDB(String jdbcEndPoint, String databaseName, String user, String password, String databaseType) throws Exception {
         try {
             Connection conn = DriverManager.getConnection(String.format("%s%s", jdbcEndPoint, databaseName), user, password);
             Statement statement = conn.createStatement();
@@ -114,20 +122,30 @@ public class JDBCConnect implements RequestHandler<RequestClass, ResponseClass>{
 
     public ResponseClass handleRequest(RequestClass body, Context context) {
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
             System.out.printf("[EndPoint]: %s\n", body.endPoint);
             System.out.printf("[DatabaseName]: %s\n", body.databaseName);
+            System.out.printf("[DatabaseType]: %s\n", body.databaseType);
             System.out.printf("[User]: %s\n", body.user);
             System.out.printf("[Password]: %s\n", body.password);
             Boolean paramsCheckResult = Stream
-                .of(new String[]{ body.endPoint, body.databaseName, body.user, body.password})
+                .of(new String[]{ body.endPoint, body.databaseName, body.user, body.password, body.databaseType})
                 .filter(params -> params == null || params.equals(""))
                 .count() > 0;
             if (paramsCheckResult) {
                 System.out.printf("[ERROR]: %s\n", "Missing params");
                 return new ResponseClass(false, "Missing params");
             }
-            List<String> tables = queryDB(body.endPoint, body.databaseName, body.user, body.password);
+            switch (body.databaseType) {
+                case "mysql":{
+                    Class.forName("com.mysql.cj.jdbc.Driver");
+                    break;
+                }
+                default: {
+                    System.out.printf("[ERROR]: %s\n", "Unknown database type");
+                    return new ResponseClass(false, "Unknown database type"); 
+                }
+            }
+            List<String> tables = queryDB(body.endPoint, body.databaseName, body.user, body.password, body.databaseType);
             return new ResponseClass(true, "Succeed.", tables);
         } catch(ClassNotFoundException error) {
             System.out.printf("[ERROR]: %s\n", error.toString());
