@@ -14,7 +14,9 @@ A AWS lambda that can test JDBC connection and get JDBC tables
 
 # Response payload
 ```
-    Boolean result;
-    String message;
-    List<String> tables;
+{
+        Boolean result;
+        String message;
+        List<String> tables;
+}
 ```
